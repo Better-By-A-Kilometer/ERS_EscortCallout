@@ -64,6 +64,7 @@ Config.Callouts["kilo_escorts"] = {
         "weapon_appistol"
     },
     client = function(plyPed, pedList, vehicleList, playersList, objectList, propList, fireList, smokeList, calloutDataClient)
+        isActive = true;
         local Text3DInProgress = {};
         local Utils = {
             GetRandomModel = function(typeName)
@@ -331,12 +332,35 @@ Config.Callouts["kilo_escorts"] = {
         local NumberOfVIPs = Location.NumberOfVIPs;
         local NumberOfEnemies = Location.NumberOfEnemies;
         local EnemyTimeout = Location.EnemyTimeout;
-
+        
         -- Spawning VIPs
         for i = 1, NumberOfVIPs do
             local succ, res = pcall(function()
-                Utils.SpawnPed(Utils.GetRandomModel("randomPeds"), calloutDataClient.Coordinates, true);
-                -- TODO?: Add marker and animation logic.
+                local vip = Utils.SpawnPed(Utils.GetRandomModel("randomPeds"), calloutDataClient.Coordinates, true);
+                Entity(vip).state:set('PedType', 'VIP', false);
+                table.insert(pedList, vip);
+                -- TODO?: Add marker and animation logic.\
+                
+                CreateThread(function()
+                    -- TODO: Make VIPs wait until a player driving a vehicle is nearby.
+                    local closestVeh;
+                    while isActive do
+                        Wait(100);
+                        local allVehicles = GetGamePool("CVehicle");
+                        local maxDistance = 10.0;
+                        for _,handle in pairs(allVehicles) do
+                            if Vdist(GetEntityCoords(handle), GetEntityCoords(PlayerPedId()) < maxDistance) and IsPedAPlayer(GetPedInVehicleSeat(handle, -1) or -1) then
+                                maxDistance = Vdist(GetEntityCoords(handle), GetEntityCoords(PlayerPedId()));
+                                closestVeh = handle;
+                            end;
+                        end
+                        if closestVeh and DoesEntityExist(closestVeh) then
+                            break;
+                        end
+                    end
+                    -- Got a vehicle to get into: closestVeh!
+                    -- TODO: Make VIP enter first unoccupied passenger seat of vehicle.
+                end)
             end)
             if not succ then
                 print("^8Error while spawning VIPs: ^0"..tostring(res));
@@ -358,8 +382,6 @@ Config.Callouts["kilo_escorts"] = {
                 print("^8Error while spawning enemies: ^0"..tostring(res));
             end
         end
-        
-        -- TODO: Make VIPs wait until player is nearby.
         
         -- TODO: Make VIPs enter player vehicle when nearby. If vehicle is full, wait for another player-driven vehicle to arrive and then get in.
         

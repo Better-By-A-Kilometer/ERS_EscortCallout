@@ -381,10 +381,11 @@ Config.Callouts["kilo_escorts"] = {
                     end
                 end
             end
-            TriggerServerEvent("KiloERS:CalloutEnd", pedList, vehicleList, propList)
+            TriggerServerEvent("KiloERS:CalloutEnd", pedList, vehicleList, propList) -- Important because it cleans up the additional threads running on the server.
         end
     end,
     server = function(request, src, calloutData, pedList, vehicleList, objectList, propList, playersList, fireList, smokeList)
+        -- Delegates for Utils functions.
         local function SpawnVehicle(vehModel, location)
             local vehNetId = ERS_CreateVehicle(vehModel, "automobile", vector3(location.x, location.y, location.z),
                     location.w);
@@ -464,6 +465,7 @@ Config.Callouts["kilo_escorts"] = {
             end
             Citizen.CreateThread(function()
                 Citizen.Wait(1000);
+                -- Cleans up the events
                 RemoveEventHandler(endEvent);
                 RemoveEventHandler(vehicleEvent);
                 RemoveEventHandler(pedEvent);
